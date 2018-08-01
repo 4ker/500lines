@@ -1,74 +1,26 @@
-title: Blockcode: A visual programming toolkit
-author: Dethe Elza
-<markdown>
-_[Dethe](https://twitter.com/dethe) is a geek dad, aesthetic programmer, mentor, and creator of the [Waterbear](http://waterbearlang.com/) visual programming tool. He co-hosts the Vancouver Maker Education Salons and wants to fill the world with robotic origami rabbits._
-</markdown>
-In block-based programming languages, you write programs by dragging and connecting blocks that represent parts of the program. Block-based languages differ from conventional programming languages, in which you type words and symbols.
-
-Learning a programming language can be difficult because they are extremely sensitive to even the slightest of typos. Most programming languages are case-sensitive, have obscure syntax, and will refuse to run if you get so much as a semicolon in the wrong place&mdash;or worse, leave one out. Further, most programming languages in use today are based on English and their syntax cannot be localized.
-
-In contrast, a well-done block language can eliminate syntax errors completely. You can still create a program which does the wrong thing, but you cannot create one with the wrong syntax: the blocks just won't fit that way. Block languages are more discoverable: you can see all the constructs and libraries of the language right in the list of blocks. Further, blocks can be localized into any human language without changing the meaning of the programming language.
-
-\aosafigure[240pt]{blockcode-images/blockcode_ide.png}{The Blockcode IDE in use}{500l.blockcode.ide}
-
-Block-based languages have a long history, with some of the prominent ones being [Lego Mindstorms](http://www.lego.com/en-us/mindstorms/), [Alice3D](http://www.alice.org/index.php), [StarLogo](http://education.mit.edu/projects/starlogo-tng), and especially [Scratch](http://scratch.mit.edu/). There are several tools for block-based programming on the web as well: [Blockly](https://developers.google.com/blockly/), [AppInventor](http://appinventor.mit.edu/explore/), [Tynker](http://www.tynker.com/), and [many more](http://en.wikipedia.org/wiki/Visual_programming_language).
-
-The code in this chapter is loosely based on the open-source project [Waterbear](http://waterbearlang.com/), which is not a language but a tool for wrapping existing languages with a block-based syntax. Advantages of such a wrapper include the ones noted above: eliminating syntax errors, visual display of available components, ease of localization. Additionally, visual code can sometimes be easier to read and debug, and blocks can be used by pre-typing children. (We could even go further and put icons on the blocks, either in conjunction with the text names or instead of them, to allow pre-literate children to write programs, but we don't go that far in this example.)
-
-The choice of turtle graphics for this language goes back to the Logo language, which was created specifically to teach programming to children. Several of the block-based languages above include turtle graphics, and it is a small enough domain to be able to capture in a tightly constrained project such as this.
-
-If you would like to get a feel for what a block-based-language is like, you can experiment with the program that is built in this chapter from author's [GitHub repository](https://dethe.github.io/500lines/blockcode/).
-
-## Goals and Structure
-
-I want to accomplish a couple of things with this code. First and foremost, I want to implement a block language for turtle graphics, with which you can write code to create images through simple dragging-and-dropping of blocks, using as simple a structure of HTML, CSS, and JavaScript as possible. Second, but still important, I want to show how the blocks themselves can serve as a framework for other languages besides our mini turtle language.
-
-To do this, we encapsulate everything that is specific to the turtle language into one file \newline (`turtle.js`) that we can easily swap with another file. Nothing else should be specific to the turtle language; the rest should just be about handling the blocks (`blocks.js` and `menu.js`) or be generally useful web utilities (`util.js`, `drag.js`, `file.js`). That is the goal, although to maintain the small size of the project, some of those utilities are less general-purpose and more specific to their use with the blocks.
-
-One thing that struck me when writing a block language was that the language is its own IDE. You can't just code up blocks in your favourite text editor; the IDE has to be designed and developed in parallel with the block language. This has some pros and cons. On the plus side, everyone will use a consistent environment and there is no room for religious wars about what editor to use. On the downside, it can be a huge distraction from building the block language itself.
+Learning a programming language can be difficult because they are extremely
+sensitive to even the slightest of typos. Most programming languages are
+case-sensitive, have obscure syntax, and will refuse to run if you get so much
+as a semicolon in the wrong place&mdash;or worse, leave one out. Further, most
+programming languages in use today are based on English and their syntax cannot
+be localized.
 
 ### The Nature of Scripts
 
-A Blockcode script, like a script in any language (whether block- or text-based), is a sequence of operations to be followed. In the case of Blockcode the script consists of HTML elements which are iterated over, and which are each associated with a particular JavaScript function which will be run when that block's turn comes. Some blocks can contain (and are responsible for running) other blocks, and some blocks can contain numeric arguments which are passed to the functions.
-
-In most (text-based) languages, a script goes through several stages: a lexer converts the text into recognized tokens, a parser organizes the tokens into an abstract syntax tree, then depending on the language the program may be compiled into machine code or fed into an interpreter. That's a simplification; there can be more steps. For Blockcode, the layout of the blocks in the script area already represents our abstract syntax tree, so we don't have to go through the lexing and parsing stages. We use the Visitor pattern to iterate over those blocks and call predefined JavaScript functions associated with each block to run the program.
+In most (text-based) languages, a script goes through several stages: a lexer
+converts the text into recognized tokens, a parser organizes the tokens into an
+abstract syntax tree, then depending on the language the program may be
+compiled into machine code or fed into an interpreter. That's a simplification;
+there can be more steps. For Blockcode, the layout of the blocks in the script
+area already represents our abstract syntax tree, so we don't have to go
+through the lexing and parsing stages. We use the Visitor pattern to iterate
+over those blocks and call predefined JavaScript functions associated with each
+block to run the program.
 
 There is nothing stopping us from adding additional stages to be more like a traditional language. Instead of simply calling associated JavaScript functions, we could replace `turtle.js` with a block language that emits byte codes for a different virtual machine, or even C++ code for a compiler. Block languages exist (as part of the Waterbear project) for generating Java robotics code, for programming Arduino, and for scripting Minecraft running on Raspberry Pi.
 
 ### Web Applications
 
-In order to make the tool available to the widest possible audience, it is web-native. It's written in HTML, CSS, and JavaScript, so it should work in most browsers and platforms.
-
-Modern web browsers are powerful platforms, with a rich set of tools for building great apps. If something about the implementation became too complex, I took that as a sign that I wasn't doing it "the web way" and, where possible, tried to re-think how to better use the browser tools.
-
-An important difference between web applications and traditional desktop or server applications is the lack of a `main()` or other entry point. There is no explicit run loop because that is already built into the browser and implicit on every web page. All our code will be parsed and executed on load, at which point we can register for events we are interested in for interacting with the user. After the first run, all further interaction with our code will be through callbacks we set up and register, whether we register those for events (like mouse movement), timeouts (fired with the periodicity we specify), or frame handlers (called for each screen redraw, generally 60 frames per second). The browser does not expose full-featured threads either (only shared-nothing web workers).
-
-## Stepping Through the Code
-
-I've tried to follow some conventions and best practices throughout this project. Each JavaScript file is wrapped in a function to avoid leaking variables into the global environment. If it needs to expose variables to other files it will define a single global per file, based on the filename, with the exposed functions in it. This will be near the end of the file, followed by any event handlers set by that file, so you can always glance at the end of a file to see what events it handles and what functions it exposes.
-
-The code style is procedural, not object-oriented or functional. We could do the same things in any of these paradigms, but that would require more setup code and wrappers to impose on what exists already for the DOM. Recent work on [Custom Elements](http://webcomponents.org/) make it easier to work with the DOM in an OO way, and there has been a lot of great writing on [Functional JavaScript](https://leanpub.com/javascript-allonge/read), but either would require a bit of shoe-horning, so it felt simpler to keep it procedural.
-
-There are eight source files in this project, but `index.html` and `blocks.css` are basic structure and style for the app and won't be discussed. Two of the JavaScript files won't be discussed in any detail either: `util.js` contains some helpers and serves as a bridge between different browser implementations&mdash;similar to a library like jQuery but in less than 50 lines of code. `file.js` is a similar utility used for loading and saving files and serializing scripts.
-
-These are the remaining files:
-
-* `block.js` is the abstract representation of a block-based language.
-* `drag.js` implements the key interaction of the language: allowing the user to drag blocks from a list of available blocks (the "menu") to assemble them into a program (the "script").
-* `menu.js` has some helper code and is also responsible for actually running the user's program.
-* `turtle.js` defines the specifics of our block language (turtle graphics) and initializes its specific blocks. This is the file that would be replaced in order to create a different block language.
-
-### `blocks.js`
-
-Each block consists of a few HTML elements, styled with CSS, with some JavaScript event handlers for dragging-and-dropping and modifying the input argument. The `blocks.js` file helps to create and manage these groupings of elements as single objects. When a type of block is added to the block menu, it is associated with a JavaScript function to implement the language, so each block in the script has to be able to find its associated function and call it when the script runs.
-
-\aosafigure[144pt]{blockcode-images/block.png}{An example block}{500l.blockcode.block}
-
-Blocks have two optional bits of structure. They can have a single numeric parameter (with a default value), and they can be a container for other blocks. These are hard limits to work with, but would be relaxed in a larger system. In Waterbear there are also expression blocks which can be passed in as parameters; multiple parameters of a variety of types are supported. Here in the land of tight constraints we'll see what we can do with just one type of parameter.
-
-```html
-<!-- The HTML structure of a block -->
-<div class="block" draggable="true" data-name="Right">
     Right
     <input type="number" value="5">
     degrees
@@ -106,7 +58,7 @@ We have some utilities for handling blocks as DOM elements:
 - `blockContents(block)` retrieves the child blocks of a container block. It always returns a list if called on a container block, and always returns null on a simple block
 - `blockValue(block)` returns the numerical value of the input on a block if the block has an input field of type number, or null if there is no input element for the block
 - `blockScript(block)` will return a structure suitable for serializing with JSON, to save blocks in a form they can easily be restored from
-- `runBlocks(blocks)` is a handler that runs each block in an array of blocks 
+- `runBlocks(blocks)` is a handler that runs each block in an array of blocks
 
 ```javascript
     function blockContents(block){
@@ -202,7 +154,7 @@ While we are dragging, the `dragenter`, `dragover`, and `dragout` events give us
         if (evt.preventDefault) { evt.preventDefault(); }
         if (dragType === 'menu'){
             // See the section on the DataTransfer object.
-            evt.dataTransfer.dropEffect = 'copy';  
+            evt.dataTransfer.dropEffect = 'copy';
         }else{
             evt.dataTransfer.dropEffect = 'move';
         }
